@@ -1,10 +1,9 @@
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import PCComponentSelector from './PCComponentSelector';
-import { SelectedComponent } from '@/pages/PCBuilderPage';
+import { SelectedComponent } from '@/types/pcbuilder';
 
 const PC_STEPS = [
   { id: 'gabinete', name: 'Gabinete', category: 'gabinetes' },
