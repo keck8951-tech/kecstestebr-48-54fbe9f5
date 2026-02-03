@@ -7,6 +7,8 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
   }
@@ -14,6 +16,7 @@ export type Database = {
     Tables: {
       banners: {
         Row: {
+          category_id: string | null
           created_at: string | null
           id: string
           image_url: string
@@ -23,6 +26,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          category_id?: string | null
           created_at?: string | null
           id?: string
           image_url: string
@@ -32,6 +36,7 @@ export type Database = {
           title: string
         }
         Update: {
+          category_id?: string | null
           created_at?: string | null
           id?: string
           image_url?: string
@@ -40,29 +45,97 @@ export type Database = {
           order_position?: number | null
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "banners_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       categories: {
         Row: {
           created_at: string | null
           description: string | null
+          icon_symbol: string | null
           id: string
           name: string
+          show_in_explore: boolean | null
           slug: string
         }
         Insert: {
           created_at?: string | null
           description?: string | null
+          icon_symbol?: string | null
           id?: string
           name: string
+          show_in_explore?: boolean | null
           slug: string
         }
         Update: {
           created_at?: string | null
           description?: string | null
+          icon_symbol?: string | null
           id?: string
           name?: string
+          show_in_explore?: boolean | null
           slug?: string
+        }
+        Relationships: []
+      }
+      clientes: {
+        Row: {
+          bairro: string | null
+          cep: string | null
+          cidade_estado: string | null
+          cnpj_cpf: string | null
+          codigo: number
+          contato: string | null
+          created_at: string
+          empresa_nome: string
+          endereco: string | null
+          fax: string | null
+          id: string
+          insc_estadual_identidade: string | null
+          is_active: boolean | null
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          bairro?: string | null
+          cep?: string | null
+          cidade_estado?: string | null
+          cnpj_cpf?: string | null
+          codigo?: number
+          contato?: string | null
+          created_at?: string
+          empresa_nome: string
+          endereco?: string | null
+          fax?: string | null
+          id?: string
+          insc_estadual_identidade?: string | null
+          is_active?: boolean | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bairro?: string | null
+          cep?: string | null
+          cidade_estado?: string | null
+          cnpj_cpf?: string | null
+          codigo?: number
+          contato?: string | null
+          created_at?: string
+          empresa_nome?: string
+          endereco?: string | null
+          fax?: string | null
+          id?: string
+          insc_estadual_identidade?: string | null
+          is_active?: boolean | null
+          telefone?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -73,10 +146,12 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          is_active: boolean
           is_featured: boolean | null
           name: string
           price_revenda: number
           price_varejo: number
+          setor: string | null
           sku: string | null
         }
         Insert: {
@@ -85,10 +160,12 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_active?: boolean
           is_featured?: boolean | null
           name: string
           price_revenda?: number
           price_varejo?: number
+          setor?: string | null
           sku?: string | null
         }
         Update: {
@@ -97,10 +174,12 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_active?: boolean
           is_featured?: boolean | null
           name?: string
           price_revenda?: number
           price_varejo?: number
+          setor?: string | null
           sku?: string | null
         }
         Relationships: [
@@ -110,7 +189,7 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "categories"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
       profiles: {
@@ -149,18 +228,162 @@ export type Database = {
         }
         Relationships: []
       }
-      store_settings: {
+      ready_pc_components: {
         Row: {
-          id: number
-          enable_sales: boolean | null
+          created_at: string | null
+          id: string
+          product_id: string | null
+          quantity: number | null
+          ready_pc_id: string | null
         }
         Insert: {
-          id: number
-          enable_sales?: boolean | null
+          created_at?: string | null
+          id?: string
+          product_id?: string | null
+          quantity?: number | null
+          ready_pc_id?: string | null
         }
         Update: {
-          id?: number
-          enable_sales?: boolean | null
+          created_at?: string | null
+          id?: string
+          product_id?: string | null
+          quantity?: number | null
+          ready_pc_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ready_pc_components_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ready_pc_components_ready_pc_id_fkey"
+            columns: ["ready_pc_id"]
+            isOneToOne: false
+            referencedRelation: "ready_pcs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ready_pcs: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          game_image_url: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          name: string
+          price_revenda: number
+          price_varejo: number
+          specs: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          game_image_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name: string
+          price_revenda: number
+          price_varejo: number
+          specs?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          game_image_url?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string
+          price_revenda?: number
+          price_varejo?: number
+          specs?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      store_credentials: {
+        Row: {
+          created_at: string | null
+          facebook: string | null
+          id: string
+          instagram: string | null
+          twitter: string | null
+          updated_at: string | null
+          website: string | null
+          whatsapp_revenda: string | null
+          whatsapp_varejo: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          facebook?: string | null
+          id?: string
+          instagram?: string | null
+          twitter?: string | null
+          updated_at?: string | null
+          website?: string | null
+          whatsapp_revenda?: string | null
+          whatsapp_varejo?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          facebook?: string | null
+          id?: string
+          instagram?: string | null
+          twitter?: string | null
+          updated_at?: string | null
+          website?: string | null
+          whatsapp_revenda?: string | null
+          whatsapp_varejo?: string | null
+        }
+        Relationships: []
+      }
+      store_settings: {
+        Row: {
+          created_at: string | null
+          enable_sales: boolean
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          enable_sales?: boolean
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          enable_sales?: boolean
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -178,9 +401,17 @@ export type Database = {
         }
         Returns: Json
       }
+      has_internal_access: { Args: { _user_id: string }; Returns: boolean }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "atendente"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -307,6 +538,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "atendente"],
+    },
   },
 } as const
