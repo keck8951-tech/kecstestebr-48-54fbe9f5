@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { MessageCircle, Trash2, Edit } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuthGuard';
-import SelectedComponent from '@/pages/PCBuilderPage';
+import { useAuth } from '@/contexts/AuthContext';
+import { SelectedComponent } from '@/types/pcbuilder';
 
 const STEP_NAMES: { [key: string]: string } = {
   'gabinetes': 'Gabinete',

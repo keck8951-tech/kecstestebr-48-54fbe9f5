@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Component, ReactNode } from "react";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AuthErrorBoundary } from "@/contexts/AuthErrorBoundary";
+import { InternalAuthProvider } from "@/contexts/InternalAuthContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AuthPageRoute from "./pages/AuthPage";
@@ -14,6 +15,8 @@ import ProductDetailPage from "./pages/ProductDetailPage";
 import AdminPage from "./pages/AdminPage";
 import TermoPage from "./pages/TermoDeGarantia";
 import PCbuilderPage from "./pages/PCBuilderPage";
+import InternalLoginPage from "./pages/InternalLoginPage";
+import InternalDashboardPage from "./pages/InternalDashboardPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,22 +72,26 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <AuthErrorBoundary>
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<AuthPageRoute />} />
-                <Route path="/produtos" element={<ProductsPage />} />
-                <Route path="/produto/:id" element={<ProductDetailPage />} />
-                <Route path="/admin" element={<AdminPage />} />
-                <Route path="/termo-de-garantia" element={<TermoPage />} />
-                <Route path="/Monte-Seu-PC" element={<PCbuilderPage />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
+          <InternalAuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<AuthPageRoute />} />
+                  <Route path="/produtos" element={<ProductsPage />} />
+                  <Route path="/produto/:id" element={<ProductDetailPage />} />
+                  <Route path="/admin" element={<AdminPage />} />
+                  <Route path="/termo-de-garantia" element={<TermoPage />} />
+                  <Route path="/Monte-Seu-PC" element={<PCbuilderPage />} />
+                  <Route path="/interno" element={<InternalLoginPage />} />
+                  <Route path="/interno/dashboard" element={<InternalDashboardPage />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </InternalAuthProvider>
         </AuthProvider>
       </AuthErrorBoundary>
     </QueryClientProvider>
