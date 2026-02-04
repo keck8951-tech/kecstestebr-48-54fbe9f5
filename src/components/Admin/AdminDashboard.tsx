@@ -10,8 +10,6 @@ import {
   Star, 
   Settings, 
   Computer,
-  ShoppingBag,
-  Paintbrush,
   Shield
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,7 +17,6 @@ import { useToast } from '@/hooks/use-toast';
 import ProductManagement from './ProductManagement';
 import BannerManagement from './BannerManagement';
 import CategoryManagement from './CategoryManagement';
-import ClientManagement from './ClientManagement';
 import UserManagement from './UserManagement';
 import FeaturedProductsManagement from './FeaturedProductsManagement';
 import StoreCredentialsManagement from './StoreCredentialsManagement';
@@ -100,7 +97,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs defaultValue="produtos" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-9 gap-2 bg-white p-2 rounded-lg shadow-sm h-auto">
+          <TabsList className="grid w-full grid-cols-3 lg:grid-cols-8 gap-2 bg-white p-2 rounded-lg shadow-sm h-auto">
             {/* Seção: Catálogo */}
             <TabsTrigger 
               value="produtos" 
@@ -144,14 +141,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             </TabsTrigger>
 
             {/* Seção: Usuários */}
-            <TabsTrigger 
-              value="clientes" 
-              className="flex flex-col items-center justify-center p-3 data-[state=active]:bg-green-50 data-[state=active]:text-green-700"
-            >
-              <ShoppingBag className="h-5 w-5 mb-1" />
-              <span className="text-xs font-medium">Clientes</span>
-            </TabsTrigger>
-            
             <TabsTrigger 
               value="usuarios" 
               className="flex flex-col items-center justify-center p-3 data-[state=active]:bg-green-50 data-[state=active]:text-green-700"
@@ -203,10 +192,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
             </TabsContent>
 
             {/* Usuários */}
-            <TabsContent value="clientes" className="mt-0">
-              <ClientManagement />
-            </TabsContent>
-
             <TabsContent value="usuarios" className="mt-0">
               <UserManagement />
             </TabsContent>
