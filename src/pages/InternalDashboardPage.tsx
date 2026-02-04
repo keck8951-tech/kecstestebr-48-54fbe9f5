@@ -11,12 +11,19 @@ import {
   LogOut, 
   Building2,
   Loader2,
-  UserCog
+  Package,
+  PackagePlus,
+  Truck,
+  ShoppingCart
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ClientManagement from '@/components/Admin/ClientManagement';
 import InternalUserManagement from '@/components/Internal/InternalUserManagement';
 import InternalRoleManagement from '@/components/Internal/InternalRoleManagement';
+import InternalProductManagement from '@/components/Internal/InternalProductManagement';
+import InternalSupplierManagement from '@/components/Internal/InternalSupplierManagement';
+import InternalProductEntries from '@/components/Internal/InternalProductEntries';
+import InternalSalesManagement from '@/components/Internal/InternalSalesManagement';
 
 const InternalDashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -50,6 +57,34 @@ const InternalDashboardPage: React.FC = () => {
   }
 
   const tabs = [
+    {
+      id: 'products',
+      label: 'Produtos',
+      icon: Package,
+      permission: 'products.view',
+      component: <InternalProductManagement />
+    },
+    {
+      id: 'entries',
+      label: 'Entradas',
+      icon: PackagePlus,
+      permission: 'entries.view',
+      component: <InternalProductEntries />
+    },
+    {
+      id: 'suppliers',
+      label: 'Fornecedores',
+      icon: Truck,
+      permission: 'suppliers.view',
+      component: <InternalSupplierManagement />
+    },
+    {
+      id: 'sales',
+      label: 'Vendas',
+      icon: ShoppingCart,
+      permission: 'sales.view',
+      component: <InternalSalesManagement />
+    },
     {
       id: 'clients',
       label: 'Clientes',
