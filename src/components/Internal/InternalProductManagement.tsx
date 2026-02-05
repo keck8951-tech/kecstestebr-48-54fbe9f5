@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -25,6 +26,7 @@ interface Product {
   category_id?: string;
   is_active?: boolean;
   show_price_on_site?: boolean;
+  stock?: number;
   category?: {
     name: string;
   };
@@ -389,6 +391,7 @@ const InternalProductManagement: React.FC = () => {
             <TableHead>Nome</TableHead>
             <TableHead>SKU</TableHead>
             <TableHead>Categoria</TableHead>
+            <TableHead>Estoque</TableHead>
             <TableHead>Custo</TableHead>
             <TableHead>Varejo</TableHead>
             <TableHead>Revenda</TableHead>
@@ -402,6 +405,11 @@ const InternalProductManagement: React.FC = () => {
               <TableCell className="font-medium">{product.name}</TableCell>
               <TableCell>{product.sku || '-'}</TableCell>
               <TableCell>{product.category?.name || '-'}</TableCell>
+              <TableCell>
+                <Badge variant={product.stock && product.stock > 0 ? "secondary" : "destructive"}>
+                  {product.stock || 0}
+                </Badge>
+              </TableCell>
               <TableCell>R$ {(product.cost_price || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
               <TableCell>R$ {product.price_varejo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
               <TableCell>R$ {product.price_revenda.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Search, ShoppingCart, Receipt } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { format } from 'date-fns';
+import { Plus, Trash2, Search, ShoppingCart, Receipt, Printer, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useInternalAuth } from '@/contexts/InternalAuthContext';
@@ -17,6 +19,7 @@ interface Product {
   name: string;
   price_varejo: number;
   price_revenda: number;
+  stock?: number;
 }
 
 interface Client {
@@ -65,6 +68,9 @@ const InternalSalesManagement: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const receiptRef = useRef<HTMLDivElement>(null);
   
   // Form state
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
@@ -111,7 +117,7 @@ const InternalSalesManagement: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, price_varejo, price_revenda')
+        .select('id, name, price_varejo, price_revenda, stock')
         .eq('is_active', true)
         .order('name', { ascending: true });
 
@@ -154,6 +160,16 @@ const InternalSalesManagement: React.FC = () => {
       toast({
         title: "Erro",
         description: "Selecione um produto e informe a quantidade.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const product = products.find(p => p.id === currentItem.product_id);
+    if (product && product.stock !== undefined && product.stock < currentItem.quantity) {
+      toast({
+        title: "Estoque insuficiente",
+        description: `Disponível: ${product.stock} unidade(s)`,
         variant: "destructive",
       });
       return;
@@ -257,6 +273,7 @@ const InternalSalesManagement: React.FC = () => {
       setDiscount(0);
       setNotes('');
       fetchSales();
+      fetchProducts(); // Refresh products to update stock
     } catch (error: any) {
       toast({
         title: "Erro",
@@ -266,6 +283,53 @@ const InternalSalesManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handlePrintReceipt = (sale: Sale) => {
+    setSelectedSale(sale);
+    setIsReceiptOpen(true);
+  };
+
+  const printReceipt = () => {
+    const printContent = receiptRef.current;
+    if (!printContent) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Comprovante de Venda</title>
+          <style>
+            body { font-family: 'Courier New', monospace; font-size: 12px; padding: 20px; max-width: 300px; margin: 0 auto; }
+            .header { text-align: center; margin-bottom: 20px; border-bottom: 1px dashed #000; padding-bottom: 10px; }
+            .header h1 { font-size: 16px; margin: 0; }
+            .info { margin-bottom: 15px; }
+            .info p { margin: 2px 0; }
+            .items { border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 10px 0; margin: 10px 0; }
+            .item { display: flex; justify-content: space-between; margin: 5px 0; }
+            .item-name { flex: 1; }
+            .totals { margin-top: 10px; }
+            .total-line { display: flex; justify-content: space-between; margin: 3px 0; }
+            .total-final { font-weight: bold; font-size: 14px; border-top: 1px solid #000; padding-top: 5px; margin-top: 5px; }
+            .footer { text-align: center; margin-top: 20px; font-size: 10px; }
+            @media print { body { margin: 0; } }
+          </style>
+        </head>
+        <body>
+          ${printContent.innerHTML}
+        </body>
+      </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
   };
 
   const filteredSales = sales.filter(sale =>
@@ -351,7 +415,13 @@ const InternalSalesManagement: React.FC = () => {
                           <SelectContent>
                             {products.map((product) => (
                               <SelectItem key={product.id} value={product.id}>
-                                {product.name} - R$ {product.price_varejo.toFixed(2)}
+                                <div className="flex items-center gap-2">
+                                  <span>{product.name}</span>
+                                  <Badge variant={product.stock && product.stock > 0 ? "secondary" : "destructive"} className="text-xs">
+                                    {product.stock || 0} un
+                                  </Badge>
+                                  <span className="text-muted-foreground">R$ {product.price_varejo.toFixed(2)}</span>
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -495,13 +565,14 @@ const InternalSalesManagement: React.FC = () => {
             <TableHead>Pagamento</TableHead>
             <TableHead>Itens</TableHead>
             <TableHead>Total</TableHead>
+            <TableHead>Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filteredSales.map((sale) => (
             <TableRow key={sale.id}>
               <TableCell>
-                {new Date(sale.created_at).toLocaleDateString('pt-BR')}
+                {format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm')}
               </TableCell>
               <TableCell>{sale.client?.empresa_nome || 'Consumidor Final'}</TableCell>
               <TableCell>{sale.attendant_name}</TableCell>
@@ -511,6 +582,16 @@ const InternalSalesManagement: React.FC = () => {
               <TableCell>{sale.sale_items?.length || 0}</TableCell>
               <TableCell className="font-medium">
                 R$ {sale.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handlePrintReceipt(sale)}
+                  title="Imprimir comprovante"
+                >
+                  <Printer className="h-4 w-4" />
+                </Button>
               </TableCell>
             </TableRow>
           ))}
@@ -523,6 +604,75 @@ const InternalSalesManagement: React.FC = () => {
           {searchTerm ? `Nenhuma venda encontrada para "${searchTerm}"` : 'Nenhuma venda registrada'}
         </div>
       )}
+
+      {/* Receipt Dialog */}
+      <Dialog open={isReceiptOpen} onOpenChange={setIsReceiptOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Comprovante de Venda</DialogTitle>
+          </DialogHeader>
+          
+          {selectedSale && (
+            <>
+              <div ref={receiptRef} className="p-4 bg-white text-black">
+                <div className="header">
+                  <h1>COMPROVANTE DE VENDA</h1>
+                  <p>KECS Informática</p>
+                </div>
+                
+                <div className="info">
+                  <p><strong>Data:</strong> {format(new Date(selectedSale.created_at), 'dd/MM/yyyy HH:mm')}</p>
+                  <p><strong>Cliente:</strong> {selectedSale.client?.empresa_nome || 'Consumidor Final'}</p>
+                  <p><strong>Atendente:</strong> {selectedSale.attendant_name}</p>
+                  <p><strong>Pagamento:</strong> {PAYMENT_METHODS.find(m => m.value === selectedSale.payment_method)?.label}</p>
+                </div>
+
+                <div className="items">
+                  <p style={{ fontWeight: 'bold', marginBottom: '5px' }}>ITENS:</p>
+                  {selectedSale.sale_items?.map((item, index) => (
+                    <div key={index} className="item">
+                      <span className="item-name">{item.quantity}x {item.product_name}</span>
+                      <span>R$ {item.total.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="totals">
+                  <div className="total-line">
+                    <span>Subtotal:</span>
+                    <span>R$ {selectedSale.subtotal.toFixed(2)}</span>
+                  </div>
+                  {selectedSale.discount > 0 && (
+                    <div className="total-line">
+                      <span>Desconto:</span>
+                      <span>- R$ {selectedSale.discount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="total-line total-final">
+                    <span>TOTAL:</span>
+                    <span>R$ {selectedSale.total.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div className="footer">
+                  <p>Obrigado pela preferência!</p>
+                  <p>www.kecs.com.br</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2 mt-4">
+                <Button onClick={printReceipt} className="flex-1">
+                  <Printer className="h-4 w-4 mr-2" />
+                  Imprimir
+                </Button>
+                <Button variant="outline" onClick={() => setIsReceiptOpen(false)}>
+                  Fechar
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

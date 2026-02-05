@@ -14,7 +14,8 @@ import {
   Package,
   PackagePlus,
   Truck,
-  ShoppingCart
+  ShoppingCart,
+  BarChart3
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import ClientManagement from '@/components/Admin/ClientManagement';
@@ -24,6 +25,7 @@ import InternalProductManagement from '@/components/Internal/InternalProductMana
 import InternalSupplierManagement from '@/components/Internal/InternalSupplierManagement';
 import InternalProductEntries from '@/components/Internal/InternalProductEntries';
 import InternalSalesManagement from '@/components/Internal/InternalSalesManagement';
+import InternalSalesReport from '@/components/Internal/InternalSalesReport';
 
 const InternalDashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -84,6 +86,13 @@ const InternalDashboardPage: React.FC = () => {
       icon: ShoppingCart,
       permission: 'sales.view',
       component: <InternalSalesManagement />
+    },
+    {
+      id: 'reports',
+      label: 'Relatórios',
+      icon: BarChart3,
+      permission: 'reports.view',
+      component: <InternalSalesReport />
     },
     {
       id: 'clients',

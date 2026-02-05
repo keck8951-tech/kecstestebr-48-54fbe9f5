@@ -347,6 +347,7 @@ export type Database = {
           setor: string | null
           show_price_on_site: boolean | null
           sku: string | null
+          stock: number | null
         }
         Insert: {
           category_id?: string | null
@@ -363,6 +364,7 @@ export type Database = {
           setor?: string | null
           show_price_on_site?: boolean | null
           sku?: string | null
+          stock?: number | null
         }
         Update: {
           category_id?: string | null
@@ -379,6 +381,7 @@ export type Database = {
           setor?: string | null
           show_price_on_site?: boolean | null
           sku?: string | null
+          stock?: number | null
         }
         Relationships: [
           {
