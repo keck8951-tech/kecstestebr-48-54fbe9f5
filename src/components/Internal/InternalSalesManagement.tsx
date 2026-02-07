@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
-import { Plus, Trash2, Search, ShoppingCart, Receipt, Printer, Eye } from 'lucide-react';
+import { Plus, Trash2, Search, ShoppingCart, Receipt, Printer, Eye, XCircle, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card, CardContent } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -49,7 +49,7 @@ interface Sale {
   status: string;
   created_at: string;
   client?: { empresa_nome: string };
-  sale_items?: Array<{ product_name: string; quantity: number; unit_price: number; total: number }>;
+  sale_items?: Array<{ id: string; product_id: string; product_name: string; quantity: number; unit_price: number; total: number }>;
 }
 
 const PAYMENT_METHODS = [
@@ -70,9 +70,11 @@ const InternalSalesManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
   const [isReceiptOpen, setIsReceiptOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
   
-  // Form state
+  // Form state for new sale
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [selectedClient, setSelectedClient] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('');
@@ -84,6 +86,12 @@ const InternalSalesManagement: React.FC = () => {
     quantity: 1,
     unit_price: 0
   });
+
+  // Edit form state
+  const [editPaymentMethod, setEditPaymentMethod] = useState('');
+  const [editDiscount, setEditDiscount] = useState(0);
+  const [editNotes, setEditNotes] = useState('');
+  const [editClient, setEditClient] = useState('');
 
   const { toast } = useToast();
   const { user, hasPermission } = useInternalAuth();
@@ -101,7 +109,7 @@ const InternalSalesManagement: React.FC = () => {
         .select(`
           *,
           client:clientes(empresa_nome),
-          sale_items(product_name, quantity, unit_price, total)
+          sale_items(id, product_id, product_name, quantity, unit_price, total)
         `)
         .order('created_at', { ascending: false })
         .limit(100);
@@ -207,27 +215,16 @@ const InternalSalesManagement: React.FC = () => {
 
   const handleSubmit = async () => {
     if (saleItems.length === 0) {
-      toast({
-        title: "Erro",
-        description: "Adicione pelo menos um produto à venda.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Adicione pelo menos um produto à venda.", variant: "destructive" });
       return;
     }
-
     if (!paymentMethod) {
-      toast({
-        title: "Erro",
-        description: "Selecione o método de pagamento.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Selecione o método de pagamento.", variant: "destructive" });
       return;
     }
 
     setLoading(true);
-
     try {
-      // Create sale
       const { data: saleData, error: saleError } = await supabase
         .from('sales')
         .insert({
@@ -244,7 +241,6 @@ const InternalSalesManagement: React.FC = () => {
 
       if (saleError) throw saleError;
 
-      // Create sale items
       const itemsToInsert = saleItems.map(item => ({
         sale_id: saleData.id,
         product_id: item.product_id,
@@ -260,12 +256,8 @@ const InternalSalesManagement: React.FC = () => {
 
       if (itemsError) throw itemsError;
 
-      toast({
-        title: "Venda registrada!",
-        description: `Venda de R$ ${calculateTotal().toFixed(2)} registrada com sucesso.`,
-      });
+      toast({ title: "Venda registrada!", description: `Venda de R$ ${calculateTotal().toFixed(2)} registrada com sucesso.` });
 
-      // Reset form
       setIsOpen(false);
       setSaleItems([]);
       setSelectedClient('');
@@ -273,13 +265,89 @@ const InternalSalesManagement: React.FC = () => {
       setDiscount(0);
       setNotes('');
       fetchSales();
-      fetchProducts(); // Refresh products to update stock
+      fetchProducts();
     } catch (error: any) {
-      toast({
-        title: "Erro",
-        description: error.message || "Ocorreu um erro ao registrar a venda.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: error.message || "Ocorreu um erro ao registrar a venda.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelSale = async (sale: Sale) => {
+    if (sale.status === 'cancelled') {
+      toast({ title: "Aviso", description: "Esta venda já está cancelada.", variant: "destructive" });
+      return;
+    }
+
+    if (!confirm(`Deseja realmente cancelar esta venda de R$ ${sale.total.toFixed(2)}? O estoque será devolvido automaticamente.`)) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Delete sale items first (triggers stock return via DB trigger)
+      if (sale.sale_items && sale.sale_items.length > 0) {
+        const { error: itemsError } = await supabase
+          .from('sale_items')
+          .delete()
+          .eq('sale_id', sale.id);
+
+        if (itemsError) throw itemsError;
+      }
+
+      // Update sale status to cancelled
+      const { error: saleError } = await supabase
+        .from('sales')
+        .update({ status: 'cancelled', total: 0, subtotal: 0, discount: 0 })
+        .eq('id', sale.id);
+
+      if (saleError) throw saleError;
+
+      toast({ title: "Venda cancelada", description: "A venda foi cancelada e o estoque foi devolvido." });
+      fetchSales();
+      fetchProducts();
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message || "Não foi possível cancelar a venda.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenEdit = (sale: Sale) => {
+    setEditingSale(sale);
+    setEditPaymentMethod(sale.payment_method);
+    setEditDiscount(sale.discount);
+    setEditNotes(sale.notes || '');
+    setEditClient(sale.client_id || '');
+    setIsEditOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingSale) return;
+
+    setLoading(true);
+    try {
+      const newTotal = editingSale.subtotal - editDiscount;
+
+      const { error } = await supabase
+        .from('sales')
+        .update({
+          payment_method: editPaymentMethod,
+          discount: editDiscount,
+          total: newTotal,
+          notes: editNotes || null,
+          client_id: editClient || null
+        })
+        .eq('id', editingSale.id);
+
+      if (error) throw error;
+
+      toast({ title: "Venda atualizada", description: "Os dados da venda foram atualizados com sucesso." });
+      setIsEditOpen(false);
+      setEditingSale(null);
+      fetchSales();
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message || "Não foi possível atualizar a venda.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -315,6 +383,7 @@ const InternalSalesManagement: React.FC = () => {
             .total-line { display: flex; justify-content: space-between; margin: 3px 0; }
             .total-final { font-weight: bold; font-size: 14px; border-top: 1px solid #000; padding-top: 5px; margin-top: 5px; }
             .footer { text-align: center; margin-top: 20px; font-size: 10px; }
+            .cancelled { text-align: center; font-size: 18px; font-weight: bold; color: red; margin: 10px 0; }
             @media print { body { margin: 0; } }
           </style>
         </head>
@@ -339,6 +408,8 @@ const InternalSalesManagement: React.FC = () => {
   );
 
   const canCreate = hasPermission('sales.create');
+  const canEdit = hasPermission('sales.edit');
+  const canCancel = hasPermission('sales.cancel');
 
   return (
     <div className="space-y-4">
@@ -565,12 +636,13 @@ const InternalSalesManagement: React.FC = () => {
             <TableHead>Pagamento</TableHead>
             <TableHead>Itens</TableHead>
             <TableHead>Total</TableHead>
+            <TableHead>Status</TableHead>
             <TableHead>Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {filteredSales.map((sale) => (
-            <TableRow key={sale.id}>
+            <TableRow key={sale.id} className={sale.status === 'cancelled' ? 'opacity-60' : ''}>
               <TableCell>
                 {format(new Date(sale.created_at), 'dd/MM/yyyy HH:mm')}
               </TableCell>
@@ -584,14 +656,42 @@ const InternalSalesManagement: React.FC = () => {
                 R$ {sale.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </TableCell>
               <TableCell>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handlePrintReceipt(sale)}
-                  title="Imprimir comprovante"
-                >
-                  <Printer className="h-4 w-4" />
-                </Button>
+                <Badge variant={sale.status === 'cancelled' ? 'destructive' : 'default'}>
+                  {sale.status === 'cancelled' ? 'Cancelada' : 'Concluída'}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handlePrintReceipt(sale)}
+                    title="Imprimir comprovante"
+                  >
+                    <Printer className="h-4 w-4" />
+                  </Button>
+                  {canEdit && sale.status !== 'cancelled' && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleOpenEdit(sale)}
+                      title="Editar venda"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {canCancel && sale.status !== 'cancelled' && (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleCancelSale(sale)}
+                      title="Cancelar venda"
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}
@@ -604,6 +704,102 @@ const InternalSalesManagement: React.FC = () => {
           {searchTerm ? `Nenhuma venda encontrada para "${searchTerm}"` : 'Nenhuma venda registrada'}
         </div>
       )}
+
+      {/* Edit Sale Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editar Venda</DialogTitle>
+            <DialogDescription>
+              Altere os dados da venda. Os itens não podem ser modificados.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingSale && (
+            <div className="space-y-4 py-2">
+              <div>
+                <Label>Cliente</Label>
+                <Select value={editClient} onValueChange={setEditClient}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Consumidor Final" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Consumidor Final</SelectItem>
+                    {clients.map((client) => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.empresa_nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Método de Pagamento</Label>
+                <Select value={editPaymentMethod} onValueChange={setEditPaymentMethod}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_METHODS.map((method) => (
+                      <SelectItem key={method.value} value={method.value}>
+                        {method.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Desconto (R$)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editDiscount}
+                  onChange={(e) => setEditDiscount(parseFloat(e.target.value) || 0)}
+                />
+              </div>
+
+              <div>
+                <Label>Observações</Label>
+                <Textarea
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              <Card className="bg-muted/50">
+                <CardContent className="pt-4">
+                  <div className="flex justify-between">
+                    <span>Subtotal:</span>
+                    <span>R$ {editingSale.subtotal.toFixed(2)}</span>
+                  </div>
+                  {editDiscount > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Desconto:</span>
+                      <span>- R$ {editDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold border-t pt-2 mt-2">
+                    <span>Total:</span>
+                    <span>R$ {(editingSale.subtotal - editDiscount).toFixed(2)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={loading}>
+              {loading ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Receipt Dialog */}
       <Dialog open={isReceiptOpen} onOpenChange={setIsReceiptOpen}>
@@ -619,6 +815,10 @@ const InternalSalesManagement: React.FC = () => {
                   <h1>COMPROVANTE DE VENDA</h1>
                   <p>KECS Informática</p>
                 </div>
+
+                {selectedSale.status === 'cancelled' && (
+                  <div className="cancelled">*** CANCELADA ***</div>
+                )}
                 
                 <div className="info">
                   <p><strong>Data:</strong> {format(new Date(selectedSale.created_at), 'dd/MM/yyyy HH:mm')}</p>
@@ -635,6 +835,9 @@ const InternalSalesManagement: React.FC = () => {
                       <span>R$ {item.total.toFixed(2)}</span>
                     </div>
                   ))}
+                  {(!selectedSale.sale_items || selectedSale.sale_items.length === 0) && (
+                    <p style={{ fontStyle: 'italic' }}>Nenhum item</p>
+                  )}
                 </div>
 
                 <div className="totals">

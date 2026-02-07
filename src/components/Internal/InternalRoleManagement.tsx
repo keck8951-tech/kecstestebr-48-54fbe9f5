@@ -51,6 +51,32 @@ interface Permission {
 }
 
 const PERMISSION_GROUPS = {
+  'Produtos': [
+    { key: 'products.view', label: 'Visualizar produtos' },
+    { key: 'products.create', label: 'Criar produtos' },
+    { key: 'products.edit', label: 'Editar produtos' },
+    { key: 'products.delete', label: 'Excluir produtos' },
+  ],
+  'Entradas': [
+    { key: 'entries.view', label: 'Visualizar entradas' },
+    { key: 'entries.create', label: 'Criar entradas' },
+    { key: 'entries.delete', label: 'Excluir entradas' },
+  ],
+  'Fornecedores': [
+    { key: 'suppliers.view', label: 'Visualizar fornecedores' },
+    { key: 'suppliers.create', label: 'Criar fornecedores' },
+    { key: 'suppliers.edit', label: 'Editar fornecedores' },
+    { key: 'suppliers.delete', label: 'Excluir fornecedores' },
+  ],
+  'Vendas': [
+    { key: 'sales.view', label: 'Visualizar vendas' },
+    { key: 'sales.create', label: 'Criar vendas' },
+    { key: 'sales.edit', label: 'Editar vendas' },
+    { key: 'sales.cancel', label: 'Cancelar vendas' },
+  ],
+  'Relatórios': [
+    { key: 'reports.view', label: 'Visualizar relatórios' },
+  ],
   'Clientes': [
     { key: 'clients.view', label: 'Visualizar clientes' },
     { key: 'clients.create', label: 'Criar clientes' },
