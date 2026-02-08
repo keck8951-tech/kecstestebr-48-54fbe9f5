@@ -367,12 +367,12 @@ const InternalSalesReport: React.FC = () => {
 
             <div>
               <Label>Atendente</Label>
-              <Select value={selectedAttendant} onValueChange={setSelectedAttendant}>
+              <Select value={selectedAttendant || 'all'} onValueChange={(v) => setSelectedAttendant(v === 'all' ? '' : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   {attendants.map((attendant) => (
                     <SelectItem key={attendant} value={attendant}>
                       {attendant}
@@ -384,12 +384,12 @@ const InternalSalesReport: React.FC = () => {
 
             <div>
               <Label>Pagamento</Label>
-              <Select value={selectedPayment} onValueChange={setSelectedPayment}>
+              <Select value={selectedPayment || 'all'} onValueChange={(v) => setSelectedPayment(v === 'all' ? '' : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   {PAYMENT_METHODS.map((method) => (
                     <SelectItem key={method.value} value={method.value}>
                       {method.label}
