@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useInternalAuth } from '@/contexts/InternalAuthContext';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { toast } from '@/hooks/use-toast';
 
 const InternalLoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, isLoading } = useInternalAuth();
+  const { login, isLoading, isAuthenticated } = useInternalAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,6 +56,12 @@ const InternalLoginPage: React.FC = () => {
     
     setIsSubmitting(false);
   };
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate('/interno/dashboard');
+    }
+  }, [isLoading, isAuthenticated, navigate]);
 
   if (isLoading) {
     return (

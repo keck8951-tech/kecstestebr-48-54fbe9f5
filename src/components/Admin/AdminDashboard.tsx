@@ -10,8 +10,10 @@ import {
   Star, 
   Settings, 
   Computer,
-  Shield
+  Shield,
+  Building2
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import ProductManagement from './ProductManagement';
@@ -30,6 +32,7 @@ interface AdminDashboardProps {
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
   const { signOut, profile } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     const result = await signOut();
@@ -71,6 +74,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onBack }) => {
               </div>
               
               <div className="flex space-x-2">
+                <Button
+                  onClick={() => navigate('/interno')}
+                  variant="outline"
+                  size="sm"
+                  className="hidden sm:flex items-center gap-2"
+                >
+                  <Building2 className="h-4 w-4" />
+                  Área Interna
+                </Button>
                 <Button
                   onClick={onBack}
                   variant="outline"
