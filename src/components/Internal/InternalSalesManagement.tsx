@@ -442,12 +442,12 @@ const InternalSalesManagement: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label>Cliente</Label>
-                    <Select value={selectedClient} onValueChange={setSelectedClient}>
+                    <Select value={selectedClient || 'none'} onValueChange={(v) => setSelectedClient(v === 'none' ? '' : v)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um cliente" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Consumidor Final</SelectItem>
+                        <SelectItem value="none">Consumidor Final</SelectItem>
                         {clients.map((client) => (
                           <SelectItem key={client.id} value={client.id}>
                             {client.empresa_nome}
@@ -719,12 +719,12 @@ const InternalSalesManagement: React.FC = () => {
             <div className="space-y-4 py-2">
               <div>
                 <Label>Cliente</Label>
-                <Select value={editClient} onValueChange={setEditClient}>
+                <Select value={editClient || 'none'} onValueChange={(v) => setEditClient(v === 'none' ? '' : v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Consumidor Final" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Consumidor Final</SelectItem>
+                    <SelectItem value="none">Consumidor Final</SelectItem>
                     {clients.map((client) => (
                       <SelectItem key={client.id} value={client.id}>
                         {client.empresa_nome}

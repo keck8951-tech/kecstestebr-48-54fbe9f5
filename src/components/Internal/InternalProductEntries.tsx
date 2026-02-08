@@ -251,12 +251,12 @@ const InternalProductEntries: React.FC = () => {
                 {/* Supplier Selection */}
                 <div>
                   <Label>Fornecedor (opcional)</Label>
-                  <Select value={selectedSupplier} onValueChange={setSelectedSupplier}>
+                  <Select value={selectedSupplier || 'none'} onValueChange={(v) => setSelectedSupplier(v === 'none' ? '' : v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione um fornecedor" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
+                      <SelectItem value="none">Nenhum</SelectItem>
                       {suppliers.map((supplier) => (
                         <SelectItem key={supplier.id} value={supplier.id}>
                           {supplier.name}
