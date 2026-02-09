@@ -259,26 +259,27 @@ const InternalRoleManagement: React.FC = () => {
     if (!selectedRole) return;
 
     try {
-      // Update all permissions for this role
-      for (const [key, allowed] of Object.entries(rolePermissions)) {
-        const existingPerm = permissions.find(
-          p => p.role_id === selectedRole.id && p.permission_key === key
-        );
+      const token = localStorage.getItem('internal_auth_token');
+      if (!token) {
+        toast({
+          title: 'Erro',
+          description: 'Sessão expirada. Faça login novamente.',
+          variant: 'destructive'
+        });
+        return;
+      }
 
-        if (existingPerm) {
-          await supabase
-            .from('internal_permissions')
-            .update({ allowed })
-            .eq('id', existingPerm.id);
-        } else {
-          await supabase
-            .from('internal_permissions')
-            .insert({
-              role_id: selectedRole.id,
-              permission_key: key,
-              allowed
-            });
+      const { data, error } = await supabase.functions.invoke('internal-auth', {
+        body: {
+          action: 'manage_permissions',
+          token,
+          role_id: selectedRole.id,
+          permissions: rolePermissions
         }
+      });
+
+      if (error || !data?.success) {
+        throw new Error(data?.error || 'Erro ao salvar permissões');
       }
 
       toast({
@@ -292,7 +293,7 @@ const InternalRoleManagement: React.FC = () => {
       console.error('Error saving permissions:', error);
       toast({
         title: 'Erro',
-        description: 'Não foi possível salvar as permissões',
+        description: error.message || 'Não foi possível salvar as permissões',
         variant: 'destructive'
       });
     }

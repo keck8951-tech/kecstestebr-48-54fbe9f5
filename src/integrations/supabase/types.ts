@@ -513,6 +513,7 @@ export type Database = {
       sale_items: {
         Row: {
           created_at: string | null
+          custo_item: number | null
           id: string
           product_id: string | null
           product_name: string
@@ -523,6 +524,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          custo_item?: number | null
           id?: string
           product_id?: string | null
           product_name: string
@@ -533,6 +535,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          custo_item?: number | null
           id?: string
           product_id?: string | null
           product_name?: string

@@ -18,7 +18,7 @@ serve(async (req) => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    const { action, username, password, token } = await req.json();
+    const { action, username, password, token, role_id, permissions: permUpdates } = await req.json();
 
     if (action === "login") {
       // Validate input
@@ -227,6 +227,105 @@ serve(async (req) => {
           permissions: permissionsMap,
           expiresAt: session.expires_at
         }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (action === "manage_permissions") {
+      // Validate token first
+      if (!token) {
+        return new Response(
+          JSON.stringify({ error: "Token não fornecido" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Verify session and master/permission
+      const { data: session } = await supabase
+        .from("internal_sessions")
+        .select(`
+          expires_at,
+          internal_users (
+            is_active,
+            role_id,
+            internal_roles ( is_master )
+          )
+        `)
+        .eq("token", token)
+        .single();
+
+      if (!session || new Date(session.expires_at) < new Date()) {
+        return new Response(
+          JSON.stringify({ error: "Sessão inválida ou expirada" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const sessionUser = session.internal_users as any;
+      if (!sessionUser?.is_active) {
+        return new Response(
+          JSON.stringify({ error: "Usuário desativado" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Check if user is master or has permissions.manage
+      const isMaster = sessionUser.internal_roles?.is_master || false;
+      if (!isMaster) {
+        const { data: permCheck } = await supabase
+          .from("internal_permissions")
+          .select("allowed")
+          .eq("role_id", sessionUser.role_id)
+          .eq("permission_key", "permissions.manage")
+          .single();
+        
+        if (!permCheck?.allowed) {
+          return new Response(
+            JSON.stringify({ error: "Sem permissão para gerenciar permissões" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
+      // role_id and permUpdates already parsed from body at the top
+      if (!role_id || !permUpdates || typeof permUpdates !== 'object') {
+        return new Response(
+          JSON.stringify({ error: "role_id e permissions são obrigatórios" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Get existing permissions for this role
+      const { data: existingPerms } = await supabase
+        .from("internal_permissions")
+        .select("id, permission_key")
+        .eq("role_id", role_id);
+
+      const existingMap: Record<string, string> = {};
+      (existingPerms || []).forEach(p => {
+        existingMap[p.permission_key] = p.id;
+      });
+
+      // Update or insert each permission
+      for (const [key, allowed] of Object.entries(permUpdates)) {
+        if (existingMap[key]) {
+          await supabase
+            .from("internal_permissions")
+            .update({ allowed: allowed as boolean })
+            .eq("id", existingMap[key]);
+        } else {
+          await supabase
+            .from("internal_permissions")
+            .insert({
+              role_id,
+              permission_key: key,
+              allowed: allowed as boolean
+            });
+        }
+      }
+
+      return new Response(
+        JSON.stringify({ success: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
