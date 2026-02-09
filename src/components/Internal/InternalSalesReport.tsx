@@ -213,7 +213,8 @@ const InternalSalesReport: React.FC = () => {
     const salesByDay: Record<string, { revenue: number; profit: number; count: number }> = {};
     
     sales.forEach(sale => {
-      const day = format(new Date(sale.created_at), 'yyyy-MM-dd');
+      const saleDate = new Date(sale.created_at);
+      const day = `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, '0')}-${String(saleDate.getDate()).padStart(2, '0')}`;
       if (!salesByDay[day]) salesByDay[day] = { revenue: 0, profit: 0, count: 0 };
       salesByDay[day].revenue += sale.total;
       salesByDay[day].profit += calculateSaleProfit(sale);
@@ -221,11 +222,15 @@ const InternalSalesReport: React.FC = () => {
     });
 
     return Object.entries(salesByDay)
-      .map(([date, data]) => ({
-        date,
-        formattedDate: format(new Date(date), 'dd/MM/yyyy'),
-        ...data
-      }))
+      .map(([date, data]) => {
+        const [year, month, dayNum] = date.split('-').map(Number);
+        const localDate = new Date(year, month - 1, dayNum);
+        return {
+          date,
+          formattedDate: format(localDate, 'dd/MM/yyyy'),
+          ...data
+        };
+      })
       .sort((a, b) => b.date.localeCompare(a.date));
   }, [sales, productCosts, startDate, endDate]);
 
@@ -234,7 +239,8 @@ const InternalSalesReport: React.FC = () => {
     const salesByMonth: Record<string, { revenue: number; profit: number; count: number }> = {};
     
     sales.forEach(sale => {
-      const month = format(new Date(sale.created_at), 'yyyy-MM');
+      const saleDate = new Date(sale.created_at);
+      const month = `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, '0')}`;
       if (!salesByMonth[month]) salesByMonth[month] = { revenue: 0, profit: 0, count: 0 };
       salesByMonth[month].revenue += sale.total;
       salesByMonth[month].profit += calculateSaleProfit(sale);
@@ -242,11 +248,15 @@ const InternalSalesReport: React.FC = () => {
     });
 
     return Object.entries(salesByMonth)
-      .map(([month, data]) => ({
-        month,
-        formattedMonth: format(new Date(month + '-01'), 'MMMM yyyy', { locale: ptBR }),
-        ...data
-      }))
+      .map(([month, data]) => {
+        const [year, monthNum] = month.split('-').map(Number);
+        const localDate = new Date(year, monthNum - 1, 1);
+        return {
+          month,
+          formattedMonth: format(localDate, 'MMMM yyyy', { locale: ptBR }),
+          ...data
+        };
+      })
       .sort((a, b) => b.month.localeCompare(a.month));
   }, [sales, productCosts]);
 
